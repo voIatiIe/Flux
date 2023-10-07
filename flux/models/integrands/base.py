@@ -16,7 +16,7 @@ class BaseIntegrand:
         self.target = target
 
     def __call__(self, x: Tensor) -> Tensor:
-        assert x.shape[1] == self.dim, 'Dimension mismatch'
+        assert len(x.shape) == 2 and x.shape[1] == self.dim, f'Shape mismatch! Expected: (:, {self.dim})'
 
         self.calls += x.shape[0]
 
