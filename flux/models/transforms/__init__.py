@@ -1,5 +1,3 @@
 from flux.models.transforms.base import BaseCouplingTransform
-from flux.models.transforms.transforms import (
-    PWLinearCouplingTransform,
-    PWQuadraticCouplingTransform,
-)
+from flux.models.transforms.pwlinear_transform import PWLinearCouplingTransform
+from flux.models.transforms.pwquadratic_transform import PWQuadraticCouplingTransform

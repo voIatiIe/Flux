@@ -56,7 +56,7 @@ class BaseRepeatedCouplingCellFlow(BaseFlow):
     def __init__(
         self, *,
         dim: int,
-        masks: t.List[bool],
+        masks: t.List[t.List[bool]],
         cell: CouplingCell,
         cell_parameters: t.Optional[t.Dict[str, t.Any]],
     ) -> None:

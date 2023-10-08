@@ -7,6 +7,11 @@ from flux.models.couplings import (
     PWLinearCouplingCell,
     PWQuadraticCouplingCell,
 )
+from flux.models.masks import (
+    СheckerboardMask,
+    StrideMask,
+)
+
 
 class Mode(enum.StrEnum):
     TRAIN = 'training'
@@ -19,7 +24,8 @@ class CellType(enum.Enum):
 
 
 class MaskingType(enum.Enum):
-    pass
+    CHECKERBOARD = СheckerboardMask
+    STRIDE = StrideMask
 
 
 @dataclass

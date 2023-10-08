@@ -4,7 +4,7 @@ from torch import Tensor as tt
 
 from abc import (
     ABC,
-    abstractmethod,
+    abstractstaticmethod,
 )
 
 
@@ -17,16 +17,16 @@ class BaseCouplingTransform(ABC):
     def invert(self) -> None:
         self.inverse != self.inverse
 
-    @abstractmethod
-    def forward(self, x: tt, theta: tt, compute_log_prob: bool=True) -> (tt, t.Optional[tt]):
+    @abstractstaticmethod
+    def forward(x: tt, theta: tt, compute_log_jacobian: bool=True) -> (tt, t.Optional[tt]):
         pass
 
-    @abstractmethod
-    def backward(self, x: tt, theta: tt, compute_log_prob: bool=True) -> (tt, t.Optional[tt]):
+    @abstractstaticmethod
+    def backward(x: tt, theta: tt, compute_log_jacobian: bool=True) -> (tt, t.Optional[tt]):
         pass
 
-    def __call__(self, x: tt, theta: tt, compute_log_prob: bool=True) -> (tt, t.Optional[tt]):
+    def __call__(self, x: tt, theta: tt, compute_log_jacobian: bool=True) -> (tt, t.Optional[tt]):
         if self.inverse:
-            return self.forward(x, theta, compute_log_prob)
+            return self.forward(x, theta, compute_log_jacobian)
         else:
-            return self.backward(x, theta, compute_log_prob)
+            return self.backward(x, theta, compute_log_jacobian)

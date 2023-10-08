@@ -69,15 +69,15 @@ class CouplingCell(BaseCouplingCell):
     def transform_and_compute_jacobian(self, xj: tt) -> tt:
         x_n = xj[..., self.mask]
         x_m = xj[..., self.mask_complement]
-        log_prob = xj[..., -1]
+        log_jacobian = xj[..., -1]
 
-        y = torch.zeros_like(xj).to(xj.device)
+        yj = torch.zeros_like(xj).to(xj.device)
 
-        y[..., self.mask] = x_n
-        y[..., self.mask_complement], log_prob_y = self.transform(x_m, self.trainable(x_n), compute_log_prob=True)
-        y[..., -1] = log_prob + log_prob_y
+        yj[..., self.mask] = x_n
+        yj[..., self.mask_complement], log_jacobian_y = self.transform(x_m, self.trainable(x_n), compute_log_jacobian=True)
+        yj[..., -1] = log_jacobian + log_jacobian_y
 
-        return y
+        return yj
 
     def flow(self, x: tt) -> tt:
         x_n = x[..., self.mask[:-1]]
@@ -86,7 +86,7 @@ class CouplingCell(BaseCouplingCell):
         y = torch.zeros_like(x).to(x.device)
 
         y[..., self.mask] = x_n
-        y[..., self.mask_complement], _ = self.transform(x_m, self.T(x_n), compute_log_prob=False)
+        y[..., self.mask_complement], _ = self.transform(x_m, self.T(x_n), compute_log_jacobian=False)
 
         return y
     
