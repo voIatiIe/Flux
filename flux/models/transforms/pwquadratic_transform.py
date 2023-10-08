@@ -6,9 +6,11 @@ from flux.models.transforms.base import BaseCouplingTransform
 
 
 class PWQuadraticCouplingTransform(BaseCouplingTransform):
-    #TODO: implement this
-    def forward(x: tt, theta: tt, compute_log_jacobian: bool=True) -> (tt, t.Optional[tt]):
+    # TODO: implement this
+    @staticmethod
+    def forward(x: tt, theta: tt, compute_log_jacobian: bool = True) -> t.Tuple[tt, t.Optional[tt]]:
         raise NotImplementedError()
 
-    def backward(x: tt, theta: tt, compute_log_jacobian: bool=True) -> (tt, t.Optional[tt]):
+    @staticmethod
+    def backward(x: tt, theta: tt, compute_log_jacobian: bool = True) -> t.Tuple[tt, t.Optional[tt]]:
         raise NotImplementedError()

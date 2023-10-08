@@ -1,16 +1,18 @@
-import torch
 import typing as t
 
+import torch
+
 from flux.models.couplings.base import (
-    BasePWQuadraticCouplingCell,
     BasePWLinearCouplingCell,
+    BasePWQuadraticCouplingCell,
 )
 from flux.models.trainables.trainable import DNNTrainable
 
 
 class PWLinearCouplingCell(BasePWLinearCouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         mask: t.List[bool],
         n_bins: int = 10,
@@ -20,7 +22,6 @@ class PWLinearCouplingCell(BasePWLinearCouplingCell):
         input_activation: t.Optional[torch.nn.Module] = None,
         output_activation: t.Optional[torch.nn.Module] = None,
     ) -> None:
-
         dim_in = sum(mask)
         dim_out = dim - dim_in
         out_shape = (dim_out, n_bins)
@@ -44,7 +45,8 @@ class PWLinearCouplingCell(BasePWLinearCouplingCell):
 
 class PWQuadraticCouplingCell(BasePWQuadraticCouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         mask: t.List[bool],
         n_bins: int = 10,
@@ -54,10 +56,9 @@ class PWQuadraticCouplingCell(BasePWQuadraticCouplingCell):
         input_activation: t.Optional[torch.nn.Module] = None,
         output_activation: t.Optional[torch.nn.Module] = None,
     ) -> None:
-
         dim_in = sum(mask)
         dim_out = dim - dim_in
-        out_shape = (dim_out, 2*n_bins + 1)
+        out_shape = (dim_out, 2 * n_bins + 1)
 
         trainable = DNNTrainable(
             dim_in=dim_in,

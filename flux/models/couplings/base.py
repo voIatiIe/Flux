@@ -1,16 +1,18 @@
-import enum
-import torch
 import typing as t
+from abc import (
+    ABC,
+    abstractmethod,
+)
 
-from abc import ABC, abstractmethod
+import torch
 from torch import Tensor as tt
 
+from flux.models.trainables import BaseTrainable
 from flux.models.transforms import (
     BaseCouplingTransform,
-    PWQuadraticCouplingTransform,
     PWLinearCouplingTransform,
+    PWQuadraticCouplingTransform,
 )
-from flux.models.trainables import BaseTrainable
 from flux.utils.constants import Mode
 
 
@@ -31,16 +33,16 @@ class BaseCouplingCell(ABC, torch.nn.Model):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.mode == Mode.TRAIN:
-            assert x.shape[1] == self.dim + 1, f'Shape mismatch! Expected: (:, {self.dim+1})'
+            assert x.shape[1] == self.dim + 1, f"Shape mismatch! Expected: (:, {self.dim+1})"
             return self.transform_and_compute_jacobian(x)
 
         elif self.mode == Mode.SAMPLE:
-            assert x.shape[1] == self.dim, f'Shape mismatch! Expected: (:, {self.dim})'
+            assert x.shape[1] == self.dim, f"Shape mismatch! Expected: (:, {self.dim})"
             return self.flow(x)
 
         else:
-            raise ValueError(f'Unknown flow mode {self.mode}')
-    
+            raise ValueError(f"Unknown flow mode {self.mode}")
+
     @abstractmethod
     def invert(self) -> None:
         pass
@@ -52,7 +54,8 @@ class BaseCouplingCell(ABC, torch.nn.Model):
 
 class CouplingCell(BaseCouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         transform: BaseCouplingTransform,
         mask: t.List[bool],
@@ -74,7 +77,9 @@ class CouplingCell(BaseCouplingCell):
         yj = torch.zeros_like(xj).to(xj.device)
 
         yj[..., self.mask] = x_n
-        yj[..., self.mask_complement], log_jacobian_y = self.transform(x_m, self.trainable(x_n), compute_log_jacobian=True)
+        yj[..., self.mask_complement], log_jacobian_y = self.transform(
+            x_m, self.trainable(x_n), compute_log_jacobian=True
+        )
         yj[..., -1] = log_jacobian + log_jacobian_y
 
         return yj
@@ -89,17 +94,18 @@ class CouplingCell(BaseCouplingCell):
         y[..., self.mask_complement], _ = self.transform(x_m, self.T(x_n), compute_log_jacobian=False)
 
         return y
-    
+
     def invert(self) -> None:
         self.transform.invert()
-    
+
     def is_inverted(self) -> bool:
         return self.transform.inverse
 
 
 class BasePWLinearCouplingCell(CouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         mask: t.List[bool],
         trainable: BaseTrainable,
@@ -115,7 +121,8 @@ class BasePWLinearCouplingCell(CouplingCell):
 
 class BasePWQuadraticCouplingCell(CouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         mask: t.List[bool],
         trainable: BaseTrainable,

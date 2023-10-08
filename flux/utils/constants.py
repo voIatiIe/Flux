@@ -1,21 +1,21 @@
 import enum
-import pandas
-
 from dataclasses import dataclass
+
+import pandas
 
 from flux.models.couplings import (
     PWLinearCouplingCell,
     PWQuadraticCouplingCell,
 )
 from flux.models.masks import (
-    СheckerboardMask,
     StrideMask,
+    СheckerboardMask,
 )
 
 
 class Mode(enum.StrEnum):
-    TRAIN = 'training'
-    SAMPLE = 'sampling'
+    TRAIN = "training"
+    SAMPLE = "sampling"
 
 
 class CellType(enum.Enum):

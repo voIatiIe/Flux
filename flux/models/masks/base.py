@@ -1,10 +1,12 @@
 import typing as t
-
-from abc import ABC, abstractmethod
+from abc import (
+    ABC,
+    abstractmethod,
+)
 
 
 class BaseMask(ABC):
-    def __init__(self, *, dim: int, n_masks: t.Optional[int] = None, **kwargs) -> None:
+    def __init__(self, *, dim: int, n_masks: t.Optional[int] = None) -> None:
         self.dim = dim
         self.n_masks = n_masks
 
@@ -20,9 +22,9 @@ class BaseMask(ABC):
             addition = masks[:n_addition]
             masks *= n_copies
             masks += addition
-        
+
         return masks
 
     @abstractmethod
     def masks(self) -> t.List[t.List[bool]]:
-        pass
+        raise NotImplementedError()

@@ -17,4 +17,4 @@ def set_verbosity(obj: t.Any, verbosity: t.Optional[str] = None) -> None:
     try:
         obj.logger.setLevel(VerbosityLevel[verbosity.upper()].value)
     except KeyError:
-        obj.logger.error(f'Unknown verbosity level {verbosity}')
+        obj.logger.error(f"Unknown verbosity level {verbosity}")

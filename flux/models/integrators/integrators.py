@@ -1,28 +1,33 @@
-import pandas
-import torch
 import typing as t
 
-from flux.models.integrators.base import BaseIntegrator
+import pandas
+import torch
+
 from flux.models.integrands.base import BaseIntegrand
+from flux.models.integrators.base import BaseIntegrator
 from flux.models.samplers import BaseSampler
-from flux.models.samplers.samplers import UniformSampler, GaussianSampler
+from flux.models.samplers.samplers import (
+    GaussianSampler,
+    UniformSampler,
+)
 from flux.models.trainers import BaseTrainer
 from flux.utils.constants import IntegrationResult
 
 
 class DefaultIntegrator(BaseIntegrator):
     def __init__(
-        self, *,
+        self,
+        *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
         n_iter: int = 10,
-        n_iter_survey: t.Optional[int]=None,
-        n_iter_refine: t.Optional[int]=None,
-        n_points: t.Optional[int]=10000,
-        n_points_survey: t.Optional[int]=None,
-        n_points_refine: t.Optional[int]=None,
-        use_survey: bool=False,
-        verbosity: t.Optional[str]=None,
+        n_iter_survey: t.Optional[int] = None,
+        n_iter_refine: t.Optional[int] = None,
+        n_points: t.Optional[int] = 10000,
+        n_points_survey: t.Optional[int] = None,
+        n_points_refine: t.Optional[int] = None,
+        use_survey: bool = False,
+        verbosity: t.Optional[str] = None,
         **kwargs,
     ):
         super().__init__(verbosity=verbosity, **kwargs)
@@ -39,12 +44,14 @@ class DefaultIntegrator(BaseIntegrator):
 
     @staticmethod
     def get_empty_history():
-        return pandas.DataFrame({
-            'integral': pandas.Series([], dtype='float'),
-            'uncertainty': pandas.Series([], dtype='float'),
-            'n_points': pandas.Series([], dtype='int'),
-            'phase': pandas.Series([], dtype='str')
-        })
+        return pandas.DataFrame(
+            {
+                "integral": pandas.Series([], dtype="float"),
+                "uncertainty": pandas.Series([], dtype="float"),
+                "n_points": pandas.Series([], dtype="int"),
+                "phase": pandas.Series([], dtype="str"),
+            }
+        )
 
     def initialize(self, **kwargs):
         self.history = self.get_empty_history()
@@ -67,7 +74,7 @@ class DefaultIntegrator(BaseIntegrator):
     def sample_refine(self, *, n_points: t.Optional[int], **kwargs) -> (torch.Tensor, float, float):
         n_points = n_points if n_points is not None else self.n_points_refine
 
-        #TODO: What is sample_forward?
+        # TODO: What is sample_forward?
         xj = self.trainer.sample_forward(n_points)
         x = xj[:, :-1]
 
@@ -83,13 +90,13 @@ class DefaultIntegrator(BaseIntegrator):
 
         self.history = self.history.append(
             {
-                'integral': integral,
-                'uncertainty': integral_unc,
-                'n_points': n_points,
-                'phase': 'survey',
-                'train result': train_result,
+                "integral": integral,
+                "uncertainty": integral_unc,
+                "n_points": n_points,
+                "phase": "survey",
+                "train result": train_result,
             },
-            ignore_index=True
+            ignore_index=True,
         )
         self.logger.info(f"[SURVEY] Integral: {integral:.3e} +/- {integral_unc:.3e}")
 
@@ -99,17 +106,17 @@ class DefaultIntegrator(BaseIntegrator):
         integral_unc = (integral_var / n_points) ** 0.5
         self.history = self.history.append(
             {
-                'integral': integral,
-                'uncertainty': integral_unc,
-                'n_points': n_points,
-                'phase': 'survey',
-                'train result': None,
+                "integral": integral,
+                "uncertainty": integral_unc,
+                "n_points": n_points,
+                "phase": "survey",
+                "train result": None,
             },
-            ignore_index=True
+            ignore_index=True,
         )
         self.logger.info(f"[REFINE] Integral: {integral:.3e} +/- {integral_unc:.3e}")
 
-    def finalize(self, use_survey: bool=None, **kwargs) -> IntegrationResult:
+    def finalize(self, use_survey: bool = None, **kwargs) -> IntegrationResult:
         if use_survey is None:
             use_survey = self.use_survey
 
@@ -117,7 +124,7 @@ class DefaultIntegrator(BaseIntegrator):
         if not use_survey:
             data = self.integration_history.loc[self.integration_history["phase"] == "refine"]
 
-        #TODO: Derive correct formulas.
+        # TODO: Derive correct formulas.
         integral = data["integral"].mean()
         integral_unc = 0.0
         #
@@ -133,18 +140,19 @@ class DefaultIntegrator(BaseIntegrator):
 
 class PosteriorSurveyIntegrator(BaseIntegrator):
     def __init__(
-        self, *,
+        self,
+        *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
         posterior: BaseSampler,
         n_iter: int = 10,
-        n_iter_survey: t.Optional[int]=None,
-        n_iter_refine: t.Optional[int]=None,
-        n_points: t.Optional[int]=10000,
-        n_points_survey: t.Optional[int]=None,
-        n_points_refine: t.Optional[int]=None,
-        use_survey: bool=False,
-        verbosity: t.Optional[str]=None,
+        n_iter_survey: t.Optional[int] = None,
+        n_iter_refine: t.Optional[int] = None,
+        n_points: t.Optional[int] = 10000,
+        n_points_survey: t.Optional[int] = None,
+        n_points_refine: t.Optional[int] = None,
+        use_survey: bool = False,
+        verbosity: t.Optional[str] = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -162,7 +170,7 @@ class PosteriorSurveyIntegrator(BaseIntegrator):
         )
         self.posterior = posterior
 
-    def sample_survey(self, *, n_points: t.Optional[int]=None, **kwargs) -> (torch.Tensor, float, float):
+    def sample_survey(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
         n_points = n_points if n_points is not None else self.n_points_survey
 
         xj = self.posterior(n_points)
@@ -176,19 +184,20 @@ class PosteriorSurveyIntegrator(BaseIntegrator):
 
 class UniformSurveyIntegrator(PosteriorSurveyIntegrator):
     def __init__(
-        self, *,
+        self,
+        *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
         posterior: BaseSampler,
         n_iter: int = 10,
-        n_iter_survey: t.Optional[int]=None,
-        n_iter_refine: t.Optional[int]=None,
-        n_points: t.Optional[int]=10000,
-        n_points_survey: t.Optional[int]=None,
-        n_points_refine: t.Optional[int]=None,
-        use_survey: bool=False,
-        verbosity: t.Optional[str]=None,
-        device: torch.device=torch.device('cpu'),
+        n_iter_survey: t.Optional[int] = None,
+        n_iter_refine: t.Optional[int] = None,
+        n_points: t.Optional[int] = 10000,
+        n_points_survey: t.Optional[int] = None,
+        n_points_refine: t.Optional[int] = None,
+        use_survey: bool = False,
+        verbosity: t.Optional[str] = None,
+        device: torch.device = torch.device("cpu"),
         **kwargs,
     ) -> None:
         posterior = UniformSampler(
@@ -210,21 +219,23 @@ class UniformSurveyIntegrator(PosteriorSurveyIntegrator):
             **kwargs,
         )
 
+
 class GaussianSurveyIntegrator(PosteriorSurveyIntegrator):
     def __init__(
-        self, *,
+        self,
+        *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
         posterior: BaseSampler,
         n_iter: int = 10,
-        n_iter_survey: t.Optional[int]=None,
-        n_iter_refine: t.Optional[int]=None,
-        n_points: t.Optional[int]=10000,
-        n_points_survey: t.Optional[int]=None,
-        n_points_refine: t.Optional[int]=None,
-        use_survey: bool=False,
-        verbosity: t.Optional[str]=None,
-        device: torch.device=torch.device('cpu'),
+        n_iter_survey: t.Optional[int] = None,
+        n_iter_refine: t.Optional[int] = None,
+        n_points: t.Optional[int] = 10000,
+        n_points_survey: t.Optional[int] = None,
+        n_points_refine: t.Optional[int] = None,
+        use_survey: bool = False,
+        verbosity: t.Optional[str] = None,
+        device: torch.device = torch.device("cpu"),
         **kwargs,
     ) -> None:
         posterior = GaussianSampler(

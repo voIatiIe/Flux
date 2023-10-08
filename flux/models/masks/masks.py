@@ -32,7 +32,8 @@ class СheckerboardMask(BaseMask):
 
 class StrideMask(BaseMask):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         spread: int = 1,
         stride: t.Optional[int] = None,
@@ -40,10 +41,10 @@ class StrideMask(BaseMask):
     ) -> None:
         super().__init__(dim=dim, n_masks=n_masks)
 
-        assert spread > 0, 'Spread must be greater than zero!'
-        assert spread < dim, 'Spread must be less than dim!'
+        assert spread > 0, "Spread must be greater than zero!"
+        assert spread < dim, "Spread must be less than dim!"
         if stride is not None:
-            assert stride > 0, 'Stride must be greater than zero!'
+            assert stride > 0, "Stride must be greater than zero!"
 
         self.spread = spread
         self.stride = stride or spread
@@ -51,11 +52,11 @@ class StrideMask(BaseMask):
     def masks(self) -> t.List[t.List[bool]]:
         masks = []
 
-        for i in range(0, self.dim,self.stride):
+        for i in range(0, self.dim, self.stride):
             mask = [False for _ in range(self.dim)]
 
-            mask[i:i+self.spread] = [True for _ in range(self.spread)]
-            mask = mask[:self.dim]
+            mask[i : i + self.spread] = [True for _ in range(self.spread)]
+            mask = mask[: self.dim]
 
             masks.append(mask)
             masks.append([not m for m in mask])

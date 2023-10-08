@@ -1,0 +1,2 @@
+lint:
+	sh lint.sh

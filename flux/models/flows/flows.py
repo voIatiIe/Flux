@@ -1,23 +1,23 @@
 import typing as t
 
+from flux.models.flows.base import BaseRepeatedCouplingCellFlow
 from flux.utils.constants import (
     CellType,
     MaskingType,
 )
-from flux.models.flows.base import BaseRepeatedCouplingCellFlow
 
 
 class RepeatedCouplingCellFlow(BaseRepeatedCouplingCellFlow):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         cell: CellType,
-        n_cells: t.Optional[int] =  None,
+        n_cells: t.Optional[int] = None,
         masking: MaskingType,
         cell_parameters: t.Optional[t.Dict[str, t.Any]] = None,
         masking_parameters: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
-
         assert dim < 2, "Dimension must be greater than one!"
         if n_cells is not None:
             assert n_cells > 1, "Number of cells must be greater than one!"

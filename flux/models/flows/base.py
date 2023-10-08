@@ -1,5 +1,6 @@
-import torch
 import typing as t
+
+import torch
 
 from flux.models.couplings import (
     BaseCouplingCell,
@@ -9,7 +10,8 @@ from flux.models.couplings import (
 
 class BaseFlow(BaseCouplingCell):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         layers: t.List[CouplingCell],
     ) -> None:
@@ -21,7 +23,7 @@ class BaseFlow(BaseCouplingCell):
     def invert(self) -> None:
         for layer in self.layers:
             layer.invert()
-        
+
         self.layers = self.layers[::-1]
 
     def is_inverted(self) -> bool:
@@ -54,13 +56,13 @@ class BaseFlow(BaseCouplingCell):
 
 class BaseRepeatedCouplingCellFlow(BaseFlow):
     def __init__(
-        self, *,
+        self,
+        *,
         dim: int,
         masks: t.List[t.List[bool]],
         cell: CouplingCell,
         cell_parameters: t.Optional[t.Dict[str, t.Any]],
     ) -> None:
-
         cell_parameters = cell_parameters or {}
         layers = [cell(dim=dim, mask=mask, **cell_parameters) for mask in masks]
 
