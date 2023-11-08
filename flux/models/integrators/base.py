@@ -71,7 +71,7 @@ class BaseIntegrator(ABC):
         integral = integral.cpu().item()
         integral_var = integral_var.cpu().item()
 
-        train_result = self.trainer.train_on_batch(x, px, fx, **training_args)
+        train_result = self.trainer.train_batch(x, px, fx, **training_args)
 
         self.process_survey_step(
             sample=(x, px, fx),
@@ -99,7 +99,7 @@ class BaseIntegrator(ABC):
         self.logger.info("Initializing the survey phase")
 
         trainer_kwargs = kwargs.get("trainer_kwargs", {})
-        self.trainer.set_config(trainer_kwargs)
+        # self.trainer.set_config(trainer_kwargs)
 
         survey_step_kwargs = kwargs.get("survey_step_kwargs", {})
         survey_initialize_kwargs = kwargs.get("survey_initialize_kwargs", {})
@@ -109,7 +109,7 @@ class BaseIntegrator(ABC):
 
         self.logger.info("Starting the survey phase")
 
-        for _ in range(n_steps):
+        for step in range(n_steps):
             self.survey_step(**survey_step_kwargs)
 
         self.logger.info("Finalizing the survey phase")
@@ -121,7 +121,7 @@ class BaseIntegrator(ABC):
 
         # TODO: Why is this needed?
         trainer_kwargs = kwargs.get("trainer_kwargs", {})
-        self.trainer.set_config(trainer_kwargs)
+        # self.trainer.set_config(trainer_kwargs)
         #
 
         refine_step_kwargs = kwargs.get("refine_step_kwargs", {})
@@ -132,14 +132,14 @@ class BaseIntegrator(ABC):
 
         self.logger.info("Starting the refine phase")
 
-        for _ in range(n_steps):
-            self.survey_step(**refine_step_kwargs)
+        for step in range(n_steps):
+            self.refine_step(**refine_step_kwargs)
 
         self.logger.info("Finalizing the refine phase")
 
         self.finalize_refine(**refine_finalize_kwargs)
 
-    def integrate(self, *, n_survey_steps, n_refine_steps, **kwargs) -> IntegrationResult:
+    def integrate(self, *, n_survey_steps=10, n_refine_steps=10, **kwargs) -> IntegrationResult:
         self.logger.info("Starting integration")
 
         initialize_kwargs = kwargs.get("initialize_kwargs", {})
@@ -150,8 +150,8 @@ class BaseIntegrator(ABC):
         self.logger.info("Initializing the integration")
         self.initialize(**initialize_kwargs)
 
-        self.survey(n_survey_steps, **survey_kwargs)
-        self.refine(n_refine_steps, **regine_kwargs)
+        self.survey(n_steps=n_survey_steps, **survey_kwargs)
+        self.refine(n_steps=n_refine_steps, **regine_kwargs)
 
         self.logger.info("Finalizing the integration")
 

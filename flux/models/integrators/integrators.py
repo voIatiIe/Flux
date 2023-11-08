@@ -71,15 +71,16 @@ class DefaultIntegrator(BaseIntegrator):
     # def sample_survey(self, **kwargs) -> (torch.Tensor, float, float):
     #     pass
 
-    def sample_refine(self, *, n_points: t.Optional[int], **kwargs) -> (torch.Tensor, float, float):
+    def sample_refine(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
         n_points = n_points if n_points is not None else self.n_points_refine
 
-        # TODO: What is sample_forward?
-        xj = self.trainer.sample_forward(n_points)
+        xj = self.trainer.sample(n_points)
         x = xj[:, :-1]
 
-        px = torch.exp(xj[:, -1])
+        px = torch.exp(-xj[:, -1])
         fx = self.integrand(x)
+
+        # print(x, px, fx, sep='\n')
 
         return x, px, fx
 
@@ -109,7 +110,7 @@ class DefaultIntegrator(BaseIntegrator):
                 "integral": integral,
                 "uncertainty": integral_unc,
                 "n_points": n_points,
-                "phase": "survey",
+                "phase": "refine",
                 "train result": None,
             },
             ignore_index=True,
@@ -120,11 +121,13 @@ class DefaultIntegrator(BaseIntegrator):
         if use_survey is None:
             use_survey = self.use_survey
 
-        data = self.integration_history
-        if not use_survey:
-            data = self.integration_history.loc[self.integration_history["phase"] == "refine"]
+        data = self.history
+        # if not use_survey:
+        #     data = self.history.loc[self.history["phase"] == "refine"]
 
         # TODO: Derive correct formulas.
+
+        print(data)
         integral = data["integral"].mean()
         integral_unc = 0.0
         #
@@ -138,7 +141,7 @@ class DefaultIntegrator(BaseIntegrator):
         )
 
 
-class PosteriorSurveyIntegrator(BaseIntegrator):
+class PosteriorSurveyIntegrator(DefaultIntegrator):
     def __init__(
         self,
         *,
@@ -176,7 +179,7 @@ class PosteriorSurveyIntegrator(BaseIntegrator):
         xj = self.posterior(n_points)
         x = xj[:, :-1]
 
-        px = torch.exp(xj[:, -1])
+        px = torch.exp(-xj[:, -1])
         fx = self.integrand(x)
 
         return x, px, fx
@@ -188,7 +191,6 @@ class UniformSurveyIntegrator(PosteriorSurveyIntegrator):
         *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
-        posterior: BaseSampler,
         n_iter: int = 10,
         n_iter_survey: t.Optional[int] = None,
         n_iter_refine: t.Optional[int] = None,
@@ -226,7 +228,6 @@ class GaussianSurveyIntegrator(PosteriorSurveyIntegrator):
         *,
         integrand: BaseIntegrand,
         trainer: BaseTrainer,
-        posterior: BaseSampler,
         n_iter: int = 10,
         n_iter_survey: t.Optional[int] = None,
         n_iter_refine: t.Optional[int] = None,

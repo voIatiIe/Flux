@@ -24,7 +24,7 @@ class BaseFlow(BaseCouplingCell):
         for layer in self.layers:
             layer.invert()
 
-        self.layers = self.layers[::-1]
+        # self.layers = self.layers[::-1]
 
     def is_inverted(self) -> bool:
         return all([l.is_inverted() for l in self.layers])
@@ -34,22 +34,30 @@ class BaseFlow(BaseCouplingCell):
         for layer in layers:
             assert layer.mode == self.mode, "Mode mismatch!"
 
-        inverted_ = [l.is_inverted() for l in self.layers]
+        inverted_ = [l.is_inverted() for l in layers]
         assert all(inverted_) or all([not el for el in inverted_]), "Layers directions out of sync!"
 
     def flow(self, x: torch.Tensor) -> torch.Tensor:
         output = x
 
-        for l in self.layers:
-            output = l.flow(output)
+        if self.is_inverted():
+            for l in self.layers[::-1]:
+                output = l.flow(output)
+        else:
+            for l in self.layers:
+                output = l.flow(output)
 
         return output
 
     def transform_and_compute_jacobian(self, xj: torch.Tensor) -> torch.Tensor:
         output = xj
 
-        for l in self.layers:
-            output = l.transform_and_compute_jacobian(output)
+        if self.is_inverted():
+            for l in self.layers[::-1]:
+                output = l.transform_and_compute_jacobian(output)
+        else:
+            for l in self.layers:
+                output = l.transform_and_compute_jacobian(output)
 
         return output
 

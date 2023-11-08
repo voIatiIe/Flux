@@ -13,11 +13,6 @@ from flux.models.masks import (
 )
 
 
-class Mode(enum.StrEnum):
-    TRAIN = "training"
-    SAMPLE = "sampling"
-
-
 class CellType(enum.Enum):
     PWLINEAR = PWLinearCouplingCell
     PWQUADRATIC = PWQuadraticCouplingCell

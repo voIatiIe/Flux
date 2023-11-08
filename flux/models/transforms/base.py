@@ -14,7 +14,7 @@ class BaseCouplingTransform(ABC):
         self.inverse = False
 
     def invert(self) -> None:
-        self.inverse != self.inverse
+        self.inverse = not self.inverse
 
     @staticmethod
     @abstractstaticmethod
@@ -28,6 +28,6 @@ class BaseCouplingTransform(ABC):
 
     def __call__(self, x: tt, theta: tt, compute_log_jacobian: bool = True) -> t.Tuple[tt, t.Optional[tt]]:
         if self.inverse:
-            return self.forward(x, theta, compute_log_jacobian)
-        else:
             return self.backward(x, theta, compute_log_jacobian)
+        else:
+            return self.forward(x, theta, compute_log_jacobian)

@@ -1,14 +1,16 @@
 import typing as t
 
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from torch import Tensor
 
 
-class BaseIntegrand:
-    def __init__(self, *, dim: int, callable: t.Callable[[Tensor], Tensor], target: t.Optional[float] = None) -> None:
+class BaseIntegrand(ABC):
+    def __init__(self, *, dim: int) -> None:
         self.calls = 0
         self.dim = dim
-        self.callable = callable
-        self.target = target
 
     def __call__(self, x: Tensor) -> Tensor:
         assert len(x.shape) == 2 and x.shape[1] == self.dim, f"Shape mismatch! Expected: (:, {self.dim})"
@@ -19,3 +21,7 @@ class BaseIntegrand:
 
     def reset(self) -> None:
         self.calls = 0
+
+    @abstractmethod
+    def callable(self, x: Tensor) -> Tensor:
+        pass

@@ -1,3 +1,4 @@
+import enum
 import typing as t
 from abc import (
     ABC,
@@ -13,10 +14,14 @@ from flux.models.transforms import (
     PWLinearCouplingTransform,
     PWQuadraticCouplingTransform,
 )
-from flux.utils.constants import Mode
 
 
-class BaseCouplingCell(ABC, torch.nn.Model):
+class Mode(enum.Enum):
+    TRAIN = "training"
+    SAMPLE = "sampling"
+
+
+class BaseCouplingCell(ABC, torch.nn.Module):
     def __init__(self, *, dim: int) -> None:
         super().__init__()
 
@@ -61,7 +66,8 @@ class CouplingCell(BaseCouplingCell):
         mask: t.List[bool],
         trainable: BaseTrainable,
     ):
-        self.dim = dim
+        super().__init__(dim=dim)
+
         self.transform = transform
 
         self.mask = mask + [False]

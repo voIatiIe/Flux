@@ -18,7 +18,7 @@ class RepeatedCouplingCellFlow(BaseRepeatedCouplingCellFlow):
         cell_parameters: t.Optional[t.Dict[str, t.Any]] = None,
         masking_parameters: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> None:
-        assert dim < 2, "Dimension must be greater than one!"
+        assert dim > 1, "Dimension must be greater than one!"
         if n_cells is not None:
             assert n_cells > 1, "Number of cells must be greater than one!"
             assert not n_cells % 2, "Number of must be even!"
