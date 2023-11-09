@@ -10,6 +10,7 @@ from flux.models.couplings import (
 from flux.models.masks import (
     StrideMask,
     СheckerboardMask,
+    OffsetMask,
 )
 
 
@@ -21,6 +22,7 @@ class CellType(enum.Enum):
 class MaskingType(enum.Enum):
     CHECKERBOARD = СheckerboardMask
     STRIDE = StrideMask
+    TEST = OffsetMask
 
 
 @dataclass

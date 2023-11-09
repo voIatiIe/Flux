@@ -24,10 +24,11 @@ class BaseFlow(BaseCouplingCell):
         for layer in self.layers:
             layer.invert()
 
-        # self.layers = self.layers[::-1]
+        self.layers = self.layers[::-1]
 
     def is_inverted(self) -> bool:
-        return all([l.is_inverted() for l in self.layers])
+        #TODO find out why doesnt work without not (something is messed up with it)
+        return not all([l.is_inverted() for l in self.layers])
 
     def _validate_layers(self, layers: t.List[CouplingCell]) -> None:
         assert layers, "Empty flow! No layers found."
@@ -40,24 +41,16 @@ class BaseFlow(BaseCouplingCell):
     def flow(self, x: torch.Tensor) -> torch.Tensor:
         output = x
 
-        if self.is_inverted():
-            for l in self.layers[::-1]:
-                output = l.flow(output)
-        else:
-            for l in self.layers:
-                output = l.flow(output)
+        for l in self.layers:
+            output = l.flow(output)
 
         return output
 
     def transform_and_compute_jacobian(self, xj: torch.Tensor) -> torch.Tensor:
         output = xj
 
-        if self.is_inverted():
-            for l in self.layers[::-1]:
-                output = l.transform_and_compute_jacobian(output)
-        else:
-            for l in self.layers:
-                output = l.transform_and_compute_jacobian(output)
+        for l in self.layers:
+            output = l.transform_and_compute_jacobian(output)
 
         return output
 

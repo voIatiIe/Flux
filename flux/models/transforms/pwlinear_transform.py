@@ -15,7 +15,7 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
         assert N == N_, "Shape mismatch"
         assert x_dim == x_dim_, "Shape mismatch"
 
-        theta = n_bins * torch.nn.Softmax(dim=2)(theta)
+        theta = 1.0 * n_bins * torch.nn.Softmax(dim=2)(theta)
 
         bin_id = torch.floor(n_bins * x)
         bin_id = torch.clamp(bin_id, min=0, max=n_bins - 1)
@@ -35,7 +35,7 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
         if compute_log_jacobian:
             log_jacobian = torch.log(torch.prod(slope, dim=1))
 
-        left_integral = torch.cumsum(theta, dim=2)
+        left_integral = torch.cumsum(theta, dim=2) / n_bins
         left_integral = torch.roll(left_integral, shifts=1, dims=2)
         left_integral[:, :, 0] = 0
         left_integral = torch.gather(left_integral, dim=2, index=bin_id.unsqueeze(-1)).squeeze(-1)
@@ -55,9 +55,9 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
         assert N == N_, "Shape mismatch"
         assert x_dim == x_dim_, "Shape mismatch"
 
-        theta = n_bins * torch.nn.Softmax(dim=2)(theta)
+        theta = 1.0 * n_bins * torch.nn.Softmax(dim=2)(theta)
 
-        left_integral = torch.cumsum(theta, dim=2)
+        left_integral = torch.cumsum(theta, dim=2) / n_bins
         left_integral = torch.roll(left_integral, shifts=1, dims=2)
         left_integral[:, :, 0] = 0
 

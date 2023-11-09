@@ -22,8 +22,8 @@ class СheckerboardMask(BaseMask):
 
                 val = not val
 
-            masks.append(mask)
             masks.append([not m for m in mask])
+            masks.append(mask)
 
             mod *= 2
 
@@ -60,5 +60,18 @@ class StrideMask(BaseMask):
 
             masks.append(mask)
             masks.append([not m for m in mask])
+
+        return masks
+
+
+class OffsetMask(BaseMask):
+    def _shifted_mask(self, offset: int) -> t.List[bool]:
+        return [(i + offset) % self.n_masks == 0 for i in range(self.dim)]
+
+    def masks(self) -> t.List[t.List[bool]]:
+        masks = []
+
+        for i in range(self.n_masks):
+            masks.append(self._shifted_mask(i))
 
         return masks

@@ -16,6 +16,6 @@ class BaseSampler(torch.nn.Module):
 
     def forward(self, n_points: int) -> torch.Tensor:
         x = self.prior.sample((n_points, self.dim))
-        log_j = self.log_prob(x)
+        log_j = -self.log_prob(x)
 
         return torch.cat([x, log_j.unsqueeze(-1)], -1)

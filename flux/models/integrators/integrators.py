@@ -68,9 +68,6 @@ class DefaultIntegrator(BaseIntegrator):
     def finalize_refine(self, **kwargs) -> None:
         pass
 
-    # def sample_survey(self, **kwargs) -> (torch.Tensor, float, float):
-    #     pass
-
     def sample_refine(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
         n_points = n_points if n_points is not None else self.n_points_refine
 
@@ -79,8 +76,6 @@ class DefaultIntegrator(BaseIntegrator):
 
         px = torch.exp(-xj[:, -1])
         fx = self.integrand(x)
-
-        # print(x, px, fx, sep='\n')
 
         return x, px, fx
 
@@ -122,12 +117,13 @@ class DefaultIntegrator(BaseIntegrator):
             use_survey = self.use_survey
 
         data = self.history
-        # if not use_survey:
-        #     data = self.history.loc[self.history["phase"] == "refine"]
+        print(data)
+
+        if not use_survey:
+            data = self.history.loc[self.history["phase"] == "refine"]
 
         # TODO: Derive correct formulas.
 
-        print(data)
         integral = data["integral"].mean()
         integral_unc = 0.0
         #

@@ -7,7 +7,6 @@ from better_abc import abstract_attribute
 from flux.models.samplers import BaseSampler
 from flux.models.flows import BaseFlow
 from flux.utils.logging import set_verbosity, VerbosityLevel
-from flux.models.couplings.base import Mode
 
 
 class BaseTrainer:
@@ -51,7 +50,7 @@ class BaseTrainer:
     ) -> None:
 
         minibatch_size = minibatch_size or x.shape[0]
-        optimizer = optimizer or torch.optim.Adam(self.flow.parameters(), lr=1.e-4)
+        optimizer = optimizer or torch.optim.Adam(self.flow.parameters())
 
         for epoch in range(n_epochs):
             self.train_batch_step(
@@ -75,7 +74,6 @@ class BaseTrainer:
                 fx[i:i+minibatch_size],
                 optimizer=optimizer,
             )
-            print(loss)
             i += minibatch_size
 
     def train_minibatch(
@@ -92,7 +90,6 @@ class BaseTrainer:
 
         xj = torch.cat([x, torch.zeros(x.shape[0], 1).to(x.device)], dim=1)
         xj = self.flow(xj)
-        print(xj)
 
         x = xj[:, :-1]
         log_qx = xj[:, -1] + self.prior.log_prob(x)

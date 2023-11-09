@@ -7,6 +7,7 @@ from flux.models.couplings.base import (
     BasePWQuadraticCouplingCell,
 )
 from flux.models.trainables.trainable import DNNTrainable
+from flux.utils.reshift import Reshift
 
 
 class PWLinearCouplingCell(BasePWLinearCouplingCell):
@@ -16,10 +17,10 @@ class PWLinearCouplingCell(BasePWLinearCouplingCell):
         dim: int,
         mask: t.List[bool],
         n_bins: int = 10,
-        n_hidden: int = 5,
-        dim_hidden: int = 128,
+        n_hidden: int = 8,
+        dim_hidden: int = 256,
         hidden_activation: torch.nn.Module = torch.nn.LeakyReLU,
-        input_activation: t.Optional[torch.nn.Module] = None,
+        input_activation: t.Optional[torch.nn.Module] = Reshift,
         output_activation: t.Optional[torch.nn.Module] = None,
     ) -> None:
         dim_in = sum(mask)
@@ -53,7 +54,7 @@ class PWQuadraticCouplingCell(BasePWQuadraticCouplingCell):
         n_hidden: int = 5,
         dim_hidden: int = 128,
         hidden_activation: torch.nn.Module = torch.nn.LeakyReLU,
-        input_activation: t.Optional[torch.nn.Module] = None,
+        input_activation: t.Optional[torch.nn.Module] = Reshift,
         output_activation: t.Optional[torch.nn.Module] = None,
     ) -> None:
         dim_in = sum(mask)
