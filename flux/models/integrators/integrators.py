@@ -1,10 +1,11 @@
+import torch
+import torch.multiprocessing as mp
 import typing as t
 
-import pandas
-import torch
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 from flux.models.integrands.base import BaseIntegrand
-from flux.models.integrators.base import BaseIntegrator
+from flux.models.integrators.base import DefaultIntegrator
 from flux.models.samplers import BaseSampler
 from flux.models.samplers.samplers import (
     GaussianSampler,
@@ -12,129 +13,7 @@ from flux.models.samplers.samplers import (
 )
 from flux.models.trainers import BaseTrainer
 from flux.utils.constants import IntegrationResult
-
-
-class DefaultIntegrator(BaseIntegrator):
-    def __init__(
-        self,
-        *,
-        integrand: BaseIntegrand,
-        trainer: BaseTrainer,
-        n_iter: int = 10,
-        n_iter_survey: t.Optional[int] = None,
-        n_iter_refine: t.Optional[int] = None,
-        n_points: t.Optional[int] = 10000,
-        n_points_survey: t.Optional[int] = None,
-        n_points_refine: t.Optional[int] = None,
-        use_survey: bool = False,
-        verbosity: t.Optional[str] = None,
-        **kwargs,
-    ):
-        super().__init__(verbosity=verbosity, **kwargs)
-        self.integrand = integrand
-        self.trainer = trainer
-
-        self.n_iter_survey = n_iter_survey if n_iter_survey is not None else n_iter
-        self.n_iter_refine = n_iter_refine if n_iter_refine is not None else n_iter
-
-        self.n_points_survey = n_points_survey if n_points_survey is not None else n_points
-        self.n_points_refine = n_points_refine if n_points_refine is not None else n_points
-
-        self.use_survey = use_survey
-
-    @staticmethod
-    def get_empty_history():
-        return pandas.DataFrame(
-            {
-                "integral": pandas.Series([], dtype="float"),
-                "uncertainty": pandas.Series([], dtype="float"),
-                "n_points": pandas.Series([], dtype="int"),
-                "phase": pandas.Series([], dtype="str"),
-            }
-        )
-
-    def initialize(self, **kwargs):
-        self.history = self.get_empty_history()
-
-    def initialize_refine(self, **kwargs):
-        pass
-
-    def initialize_survey(self, **kwargs) -> None:
-        pass
-
-    def finalize_survey(self, **kwargs) -> None:
-        pass
-
-    def finalize_refine(self, **kwargs) -> None:
-        pass
-
-    def sample_refine(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
-        n_points = n_points if n_points is not None else self.n_points_refine
-
-        xj = self.trainer.sample(n_points)
-        x = xj[:, :-1]
-
-        px = torch.exp(-xj[:, -1])
-        fx = self.integrand(x)
-
-        return x, px, fx
-
-    def process_survey_step(self, *, sample, integral, integral_var, train_result, **kwargs) -> None:
-        x, _, _ = sample
-        n_points = x.shape[0]
-        integral_unc = (integral_var / n_points) ** 0.5
-
-        self.history = self.history.append(
-            {
-                "integral": integral,
-                "uncertainty": integral_unc,
-                "n_points": n_points,
-                "phase": "survey",
-                "train result": train_result,
-            },
-            ignore_index=True,
-        )
-        self.logger.info(f"[SURVEY] Integral: {integral:.3e} +/- {integral_unc:.3e}")
-
-    def process_refine_step(self, *, sample, integral, integral_var, **kwargs) -> None:
-        x, _, _ = sample
-        n_points = x.shape[0]
-        integral_unc = (integral_var / n_points) ** 0.5
-        self.history = self.history.append(
-            {
-                "integral": integral,
-                "uncertainty": integral_unc,
-                "n_points": n_points,
-                "phase": "refine",
-                "train result": None,
-            },
-            ignore_index=True,
-        )
-        self.logger.info(f"[REFINE] Integral: {integral:.3e} +/- {integral_unc:.3e}")
-
-    def finalize(self, use_survey: bool = None, **kwargs) -> IntegrationResult:
-        if use_survey is None:
-            use_survey = self.use_survey
-
-        data = self.history
-        print(data)
-
-        if not use_survey:
-            data = self.history.loc[self.history["phase"] == "refine"]
-
-        # TODO: Derive correct formulas.
-
-        integral = data["integral"].mean()
-        integral_unc = 0.0
-        #
-
-        self.logger.info(f"Final result: {integral:.5e} +/- {integral_unc:.5e}")
-
-        return IntegrationResult(
-            integral=integral,
-            integral_unc=integral_unc,
-            history=self.history,
-        )
+from flux.utils.fsdb import ProcessGroupManager
 
 
 class PosteriorSurveyIntegrator(DefaultIntegrator):
@@ -252,4 +131,64 @@ class GaussianSurveyIntegrator(PosteriorSurveyIntegrator):
             use_survey=use_survey,
             verbosity=verbosity,
             **kwargs,
+        )
+
+
+class FSDPUniformSurveyIntegrator(UniformSurveyIntegrator):
+    model_name_prefix = "fsdp"
+
+    def __init__(
+        self,
+        *,
+        integrand: BaseIntegrand,
+        trainer: BaseTrainer,
+        n_iter: int = 10,
+        n_iter_survey: t.Optional[int] = None,
+        n_iter_refine: t.Optional[int] = None,
+        n_points: t.Optional[int] = 10000,
+        n_points_survey: t.Optional[int] = None,
+        n_points_refine: t.Optional[int] = None,
+        use_survey: bool = False,
+        verbosity: t.Optional[str] = None,
+        device: torch.device = torch.device("cpu"),
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            integrand=integrand,
+            trainer=trainer,
+            n_iter=n_iter,
+            n_iter_survey=n_iter_survey,
+            n_iter_refine=n_iter_refine,
+            n_points=n_points,
+            n_points_survey=n_points_survey,
+            n_points_refine=n_points_refine,
+            use_survey=use_survey,
+            verbosity=verbosity,
+            device=device,
+            **kwargs,
+        )
+
+    def _train(
+        self,
+        rank: int,
+        world_size: int,
+        n_train_steps: int = 10,
+    ) -> IntegrationResult:
+
+        torch.cuda.set_device(rank)
+        self.trainer.flow = self.trainer.flow.to(rank)
+        self.trainer.flow = FSDP(self.trainer.flow)
+
+        with ProcessGroupManager(rank, world_size):
+            self.survey(n_steps=n_train_steps)
+            states = self.trainer.flow.state_dict()
+            torch.save(states, f'model_{rank}.pt')
+
+    def train(self, *, n_train_steps=10, **kwargs) -> IntegrationResult:
+        world_size = torch.cuda.device_count() or 2
+        mp.spawn(
+            self._train,
+            args=(world_size, n_train_steps),
+            nprocs=world_size,
+            join=True,
         )

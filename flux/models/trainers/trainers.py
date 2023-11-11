@@ -13,6 +13,6 @@ class VarianceTrainer(BaseTrainer):
         *,
         flow: BaseFlow,
         prior: BaseSampler,
-    ):
+    ) -> None:
         super().__init__(flow=flow, prior=prior)
         self.loss = variance_loss
