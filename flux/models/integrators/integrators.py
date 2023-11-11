@@ -175,11 +175,11 @@ class FSDPUniformSurveyIntegrator(UniformSurveyIntegrator):
         n_train_steps: int = 10,
     ) -> IntegrationResult:
 
-        torch.cuda.set_device(rank)
-        self.trainer.flow = self.trainer.flow.to(rank)
-        self.trainer.flow = FSDP(self.trainer.flow)
-
         with ProcessGroupManager(rank, world_size):
+            torch.cuda.set_device(rank)
+            self.trainer.flow = self.trainer.flow.to(rank)
+            self.trainer.flow = FSDP(self.trainer.flow)
+
             self.survey(n_steps=n_train_steps)
             states = self.trainer.flow.state_dict()
             torch.save(states, f'model_{rank}.pt')
