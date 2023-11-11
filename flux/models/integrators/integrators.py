@@ -3,7 +3,6 @@ import torch.multiprocessing as mp
 import typing as t
 
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
 
 from flux.models.integrands.base import BaseIntegrand
 from flux.models.integrators.base import DefaultIntegrator
@@ -179,14 +178,21 @@ class FSDPUniformSurveyIntegrator(UniformSurveyIntegrator):
         with ProcessGroupManager(rank, world_size):
             torch.cuda.set_device(rank)
             self.trainer.flow = self.trainer.flow.to(rank)
+            #TODO: fix this!
+            self.trainer.prior = self.trainer.prior.__class__(dim=self.trainer.prior.dim, device=rank)
+            self.posterior = self.posterior.__class__(dim=self.posterior.dim, device=rank)
             self.trainer.flow = FSDP(
                 self.trainer.flow,
-                auto_wrap_policy=size_based_auto_wrap_policy,
+                #TODO: What is this?
+                use_orig_params=True,
             )
 
             self.survey(n_steps=n_train_steps)
             states = self.trainer.flow.state_dict()
             torch.save(states, f'model_{rank}.pt')
+
+            self.refine(n_steps=100)
+            result = self.finalize()
 
     def train(self, *, n_train_steps=10, **kwargs) -> IntegrationResult:
         world_size = torch.cuda.device_count()
