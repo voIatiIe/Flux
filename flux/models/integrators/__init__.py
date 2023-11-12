@@ -1,5 +1,5 @@
 from flux.models.integrators.integrators import (
-    GaussianSurveyIntegrator,
     UniformSurveyIntegrator,
     FSDPUniformSurveyIntegrator,
 )
+from flux.models.integrators.base import BaseIntegrator

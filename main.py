@@ -10,6 +10,7 @@ from flux.utils.constants import (
     MaskingType,
 )
 from flux.utils.integrands import GaussIntegrand
+from flux.models.integrators.fsdp import integrate
 
 
 def main_sequent():
@@ -67,4 +68,5 @@ def main_parallel():
 
 
 if __name__ == '__main__':
-    main_parallel()
+    integrand = GaussIntegrand(dim=5)
+    integrate(integrand)

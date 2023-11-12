@@ -21,7 +21,6 @@ class RepeatedCouplingCellFlow(BaseRepeatedCouplingCellFlow):
         assert dim > 1, "Dimension must be greater than one!"
         if n_cells is not None:
             assert n_cells > 1, "Number of cells must be greater than one!"
-            assert not n_cells % 2, "Number of must be even!"
 
         masking_parameters = masking_parameters or {}
         masks = masking.value(dim=dim, n_masks=n_cells, **masking_parameters)()

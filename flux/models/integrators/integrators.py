@@ -7,10 +7,7 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from flux.models.integrands.base import BaseIntegrand
 from flux.models.integrators.base import DefaultIntegrator
 from flux.models.samplers import BaseSampler
-from flux.models.samplers.samplers import (
-    GaussianSampler,
-    UniformSampler,
-)
+from flux.models.samplers.samplers import UniformSampler
 from flux.models.trainers import BaseTrainer
 from flux.utils.constants import IntegrationResult
 from flux.utils.fsdb import ProcessGroupManager
@@ -78,43 +75,6 @@ class UniformSurveyIntegrator(PosteriorSurveyIntegrator):
         **kwargs,
     ) -> None:
         posterior = UniformSampler(
-            dim=integrand.dim,
-            device=device,
-        )
-        super().__init__(
-            integrand=integrand,
-            trainer=trainer,
-            posterior=posterior,
-            n_iter=n_iter,
-            n_iter_survey=n_iter_survey,
-            n_iter_refine=n_iter_refine,
-            n_points=n_points,
-            n_points_survey=n_points_survey,
-            n_points_refine=n_points_refine,
-            use_survey=use_survey,
-            verbosity=verbosity,
-            **kwargs,
-        )
-
-
-class GaussianSurveyIntegrator(PosteriorSurveyIntegrator):
-    def __init__(
-        self,
-        *,
-        integrand: BaseIntegrand,
-        trainer: BaseTrainer,
-        n_iter: int = 10,
-        n_iter_survey: t.Optional[int] = None,
-        n_iter_refine: t.Optional[int] = None,
-        n_points: t.Optional[int] = 10000,
-        n_points_survey: t.Optional[int] = None,
-        n_points_refine: t.Optional[int] = None,
-        use_survey: bool = False,
-        verbosity: t.Optional[str] = None,
-        device: torch.device = torch.device("cpu"),
-        **kwargs,
-    ) -> None:
-        posterior = GaussianSampler(
             dim=integrand.dim,
             device=device,
         )
