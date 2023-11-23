@@ -6,6 +6,7 @@ from better_abc import abstract_attribute
 
 from flux.models.samplers import BaseSampler
 from flux.models.flows import BaseFlow
+from flux.utils.distributed import average_gradients
 from flux.utils.logging import set_verbosity, VerbosityLevel
 
 
@@ -18,9 +19,11 @@ class BaseTrainer:
         flow: BaseFlow,
         prior: BaseSampler,
         verbosity: t.Optional[VerbosityLevel] = None,
+        average_grads: bool = False,
     ) -> None:
         self.flow = flow
         self.prior = prior
+        self.average_grads = average_grads
 
         self.loss = abstract_attribute()
 
@@ -97,6 +100,10 @@ class BaseTrainer:
         optimizer.zero_grad()
         loss = self.loss(fx, px, log_qx)
         loss.backward()
+
+        if self.average_grads:
+            average_gradients(self.flow)
+
         optimizer.step()
 
         loss = loss.detach().cpu().item()

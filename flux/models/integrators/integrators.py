@@ -10,7 +10,7 @@ from flux.models.samplers import BaseSampler
 from flux.models.samplers.samplers import UniformSampler
 from flux.models.trainers import BaseTrainer
 from flux.utils.constants import IntegrationResult
-from flux.utils.fsdb import ProcessGroupManager
+from flux.utils.pgm import ProcessGroupManager
 
 
 class PosteriorSurveyIntegrator(DefaultIntegrator):

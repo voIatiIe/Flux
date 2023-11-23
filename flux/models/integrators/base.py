@@ -195,7 +195,6 @@ class DefaultIntegrator(BaseIntegrator):
             use_survey = self.use_survey
 
         data = self.history
-        print(data)
 
         if not use_survey:
             data = self.history.loc[self.history["phase"] == "refine"]

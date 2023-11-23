@@ -2,6 +2,7 @@ import math
 import torch
 
 from flux.models.integrands import BaseIntegrand
+from flux.utils.long_integrand import long_integrand
 
 
 class GaussIntegrand(BaseIntegrand):
@@ -23,3 +24,15 @@ class GaussIntegrand(BaseIntegrand):
     @property
     def target(self):
         return math.erf(0.5 / self.sigma) ** self.dim
+
+
+class LongIntegrand(BaseIntegrand):
+    def __init__(self) -> None:
+        super().__init__(dim=7)
+
+    def callable(self, x: torch.Tensor) -> torch.Tensor:
+        return long_integrand(x)
+
+    @property
+    def target(self):
+        return 0.0

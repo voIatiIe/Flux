@@ -30,3 +30,8 @@ class IntegrationResult:
     integral: float
     integral_unc: float
     history: pandas.DataFrame
+
+
+class Backend(enum.Enum):
+    gloo = 'gloo'
+    nlcc = 'nccl'

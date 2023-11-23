@@ -10,6 +10,7 @@ abc-property = "*"
 numpy = "*"
 pandas = "*"
 torch = "2.1.0"
+matplotlib = "*"
 
 [tool.poetry.group.dev]
 optional = true
