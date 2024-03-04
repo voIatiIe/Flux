@@ -5,6 +5,7 @@ from abc import (
 )
 
 from torch import Tensor as tt
+import torch
 
 
 class BaseCouplingTransform(ABC):
@@ -30,4 +31,5 @@ class BaseCouplingTransform(ABC):
         if self.inverse:
             return self.backward(x, theta, compute_log_jacobian)
         else:
+            # with torch.inference_mode():
             return self.forward(x, theta, compute_log_jacobian)

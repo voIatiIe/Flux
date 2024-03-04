@@ -1,5 +1,6 @@
 from flux.models.integrators.integrators import (
     UniformSurveyIntegrator,
-    FSDPUniformSurveyIntegrator,
+    SobolSurveyIntegrator,
+    VegasIntegrator,
 )
 from flux.models.integrators.base import BaseIntegrator

@@ -5,24 +5,28 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from datetime import datetime, timedelta
 
 import torch
-from better_abc import abstract_attribute
 
 from flux.models.integrands.base import BaseIntegrand
 from flux.models.trainers import BaseTrainer
 from flux.utils.constants import IntegrationResult
 from flux.utils.logging import set_verbosity
+from flux.models.samplers import UniformSampler
 
 
 class BaseIntegrator(ABC):
     set_verbosity = set_verbosity
 
-    def __init__(self, *args, verbosity=None, **kwargs) -> None:
-        self.trainer: BaseTrainer = abstract_attribute()
+    def __init__(self, *args, trainer: BaseTrainer, verbosity=None, **kwargs) -> None:
+        self.trainer = trainer
         self.logger = logging.getLogger(__name__).getChild(self.__class__.__name__ + ":" + hex(id(self)))
 
         self.set_verbosity(verbosity)
+
+        self.survey_time = timedelta()
+        self.refine_time = timedelta()
 
     @abstractmethod
     def sample_survey(self, **kwargs) -> (torch.Tensor, float, float):
@@ -96,8 +100,14 @@ class BaseIntegrator(ABC):
         survey_kwargs = kwargs.get("survey_kwargs", {})
         regine_kwargs = kwargs.get("regine_kwargs", {})
 
+        t0 = datetime.now()
         self.survey(n_steps=n_survey_steps, **survey_kwargs)
+        t1 = datetime.now()
         self.refine(n_steps=n_refine_steps, **regine_kwargs)
+        t2 = datetime.now()
+
+        self.survey_time = t1 - t0
+        self.refine_time = t2 - t1
 
         return self.finalize()
 
@@ -118,9 +128,8 @@ class DefaultIntegrator(BaseIntegrator):
         verbosity: t.Optional[str] = None,
         **kwargs,
     ):
-        super().__init__(verbosity=verbosity, **kwargs)
+        super().__init__(verbosity=verbosity, trainer=trainer, **kwargs)
         self.integrand = integrand
-        self.trainer = trainer
 
         self.n_iter_survey = n_iter_survey if n_iter_survey is not None else n_iter
         self.n_iter_refine = n_iter_refine if n_iter_refine is not None else n_iter
@@ -146,6 +155,9 @@ class DefaultIntegrator(BaseIntegrator):
     def sample_refine(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
         n_points = n_points if n_points is not None else self.n_points_refine
 
+        if self.trainer.sample_prior:
+            self.trainer.prior = self.trainer.sample_prior
+
         xj = self.trainer.sample(n_points)
         x = xj[:, :-1]
 
@@ -170,7 +182,7 @@ class DefaultIntegrator(BaseIntegrator):
             [self.history, row],
             ignore_index=True,
         )
-        self.logger.info(f"[SURVEY] Integral: {integral:.3e} +/- {integral_unc:.3e}")
+        print(f"[SURVEY] Integral: {integral:.3e} +/- {integral_unc:.3e}")
 
     def process_refine_step(self, *, sample, integral, integral_var, **kwargs) -> None:
         x, _, _ = sample
@@ -188,7 +200,7 @@ class DefaultIntegrator(BaseIntegrator):
             [self.history, row],
             ignore_index=True,
         )
-        self.logger.info(f"[REFINE] Integral: {integral:.3e} +/- {integral_unc:.3e}")
+        print(f"[REFINE] Integral: {integral:.3e} +/- {integral_unc:.3e}")
 
     def finalize(self, use_survey: bool | None = None, **kwargs) -> IntegrationResult:
         if use_survey is None:
@@ -199,15 +211,50 @@ class DefaultIntegrator(BaseIntegrator):
         if not use_survey:
             data = self.history.loc[self.history["phase"] == "refine"]
 
-        variance = 1.0 / (1.0 / data["uncertainty"] ** 2).sum()
+        # variance = 1.0 / (1.0 / data["uncertainty"] ** 2).sum()
 
-        integral = (data["integral"] / data["uncertainty"] ** 2).sum() * variance
-        integral_unc = variance ** 0.5
+        # integral = (data["integral"] / data["uncertainty"] ** 2).sum() * variance
+        # integral_unc = variance ** 0.5
 
-        self.logger.info(f"Final result: {integral:.5e} +/- {integral_unc:.5e}")
+        # self.logger.info(f"Final result: {integral:.5e} +/- {integral_unc:.5e}")
+
+        integral = data["integral"].mean()
+        integral_unc = ((data["uncertainty"] ** 2).sum() / data["uncertainty"].count() ** 2) ** 0.5
 
         return IntegrationResult(
             integral=integral,
             integral_unc=integral_unc,
             history=self.history,
+            survey_time=self.survey_time,
+            refine_time=self.refine_time,
         )
+
+class UniformIntegrator(DefaultIntegrator):
+    def integrate(self, *, n_survey_steps=10, n_refine_steps=10, **kwargs) -> IntegrationResult:
+        t0 = datetime.now()
+        t1 = datetime.now()
+        self.refine(n_steps=n_refine_steps)
+        t2 = datetime.now()
+
+        self.survey_time = t1 - t0
+        self.refine_time = t2 - t1
+
+        return self.finalize()
+
+    def sample_refine(self, *, n_points: t.Optional[int] = None, **kwargs) -> (torch.Tensor, float, float):
+        n_points = n_points if n_points is not None else self.n_points_refine
+
+        prior = UniformSampler(dim=self.integrand.dim)
+
+        x = prior(n_points)
+
+        xj = self.trainer.sample(n_points)
+        x = xj[:, :-1]
+
+        fx = self.integrand(x)
+        px = torch.ones_like(fx)
+
+        return x, px, fx
+
+    def sample_survey():
+        pass

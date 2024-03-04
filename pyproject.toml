@@ -6,11 +6,11 @@ authors = []
 
 [tool.poetry.dependencies]
 python = "3.10.*"
-abc-property = "*"
 numpy = "*"
 pandas = "*"
 torch = "2.1.0"
 matplotlib = "*"
+jupyter = "*"
 
 [tool.poetry.group.dev]
 optional = true

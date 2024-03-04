@@ -12,6 +12,9 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
         N_, x_dim_, n_bins = theta.shape
         N, x_dim = x.shape
 
+        # print(f"forward: x sizes {x.shape}")
+        # print(f"forward: theta sizes {theta.shape}")
+
         assert N == N_, "Shape mismatch"
         assert x_dim == x_dim_, "Shape mismatch"
 
@@ -28,6 +31,8 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
 
         x_ = x - 1.0 * bin_id / n_bins
         slope = torch.gather(theta, dim=2, index=bin_id.unsqueeze(-1)).squeeze(-1)
+
+        # print(f'{slope=:}')
 
         x_ *= slope
 
@@ -51,6 +56,9 @@ class PWLinearCouplingTransform(BaseCouplingTransform):
     def backward(x: tt, theta: tt, compute_log_jacobian: bool = True) -> t.Tuple[tt, t.Optional[tt]]:
         N_, x_dim_, n_bins = theta.shape
         N, x_dim = x.shape
+
+        # print(f"backward: x sizes {x.shape}")
+        # print(f"backward: theta sizes {theta.shape}")
 
         assert N == N_, "Shape mismatch"
         assert x_dim == x_dim_, "Shape mismatch"

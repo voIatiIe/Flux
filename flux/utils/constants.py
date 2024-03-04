@@ -1,5 +1,6 @@
 import enum
 from dataclasses import dataclass
+from datetime import timedelta
 
 import pandas
 
@@ -30,6 +31,8 @@ class IntegrationResult:
     integral: float
     integral_unc: float
     history: pandas.DataFrame
+    survey_time: timedelta = timedelta()
+    refine_time: timedelta = timedelta()
 
 
 class Backend(enum.Enum):

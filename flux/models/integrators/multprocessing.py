@@ -4,6 +4,7 @@ import torch
 import torch.multiprocessing as mp
 import typing as t
 
+from datetime import timedelta
 from multiprocessing.connection import Connection
 
 from flux.models.integrators import UniformSurveyIntegrator, BaseIntegrator
@@ -21,10 +22,10 @@ def _integrate(
     rank: int,
     world_size: int,
     integrand: BaseIntegrand,
-    flow_class: t.Type[BaseFlow],
-    trainer_class: t.Type[BaseTrainer],
+    flow_class: t.Type[BaseFlow] | None,
+    trainer_class: t.Type[BaseTrainer] | None,
     integrator_class: t.Type[BaseIntegrator],
-    trainer_prior_class: t.Type[BaseSampler],
+    trainer_prior_class: t.Type[BaseSampler] | None,
     cell_type: CellType,
     masking_type: MaskingType,
     n_cells: int,
@@ -41,30 +42,39 @@ def _integrate(
     dim = integrand.dim
 
     with ProcessGroupManager(rank, world_size, backend.value):
-        flow = flow_class(
-            dim=dim,
-            cell=cell_type,
-            masking=masking_type,
-            n_cells=n_cells,
-        )
-        flow = flow.to(device)
+        if flow_class and trainer_class and trainer_prior_class:
+            flow = flow_class(
+                dim=dim,
+                cell=cell_type,
+                masking=masking_type,
+                n_cells=n_cells,
+            )
+            flow = flow.to(device)
 
-        trainer = trainer_class(
-            flow=flow,
-            prior=trainer_prior_class(dim=dim, device=device),
-            average_grads=average_grads,
-        )
+            trainer = trainer_class(
+                flow=flow,
+                prior=trainer_prior_class(dim=dim, device=device),
+                average_grads=average_grads,
+            )
 
-        integrator = integrator_class(
-            integrand=integrand,
-            trainer=trainer,
-            n_points=n_points,
-            device=device,
-        )
+            integrator = integrator_class(
+                integrand=integrand,
+                trainer=trainer,
+                n_points=n_points,
+                device=device,
+            )
+        else:
+            integrator = integrator_class(
+                integrand=integrand,
+                n_points=n_points,
+                device=device,
+            )
 
         result = integrator.integrate(n_survey_steps=n_survey_steps, n_refine_steps=n_refine_steps)
         result.history['rank'] = rank
         result.history.to_csv(f'history_{rank}.csv')
+
+        pipe.send((result.survey_time, result.refine_time))
 
 
 def integrate(
@@ -85,7 +95,7 @@ def integrate(
     backend: Backend = Backend.gloo,
     n_survey_steps: int = 10,
     n_refine_steps: int = 10,
-) -> pd.DataFrame:
+) -> (pd.DataFrame, (timedelta, timedelta)):
     parent_pipe, child_pipe = mp.Pipe()
 
     args = (
@@ -117,7 +127,15 @@ def integrate(
     results: t.List[pd.DataFrame] = [pd.read_csv(f'history_{rank}.csv') for rank in range(world_size)]
     for rank in range(world_size):
         os.remove(f'history_{rank}.csv')
-    
+
     history = pd.concat(results, ignore_index=False)
 
-    return history
+    survey_time, refine_time = timedelta(), timedelta()
+
+    for rank in range(world_size):
+        s, r = parent_pipe.recv()
+
+        survey_time += s / world_size
+        refine_time += r / world_size
+
+    return history, (survey_time, refine_time)

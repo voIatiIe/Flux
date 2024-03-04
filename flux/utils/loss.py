@@ -7,3 +7,11 @@ def variance_loss(
     log_qx: torch.Tensor,
 ) -> torch.Tensor:
     return torch.mean(fx ** 2 / (px * torch.exp(log_qx)))
+
+
+def dkl_loss(
+    fx: torch.Tensor,
+    px: torch.Tensor,
+    log_qx: torch.Tensor,
+) -> torch.Tensor:
+    return -torch.mean(fx * log_qx / px)

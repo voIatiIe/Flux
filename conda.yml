@@ -1,0 +1,10 @@
+name: flux
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - pandas
+  - matplotlib
+  - pytorch
+  - pytorch-gpu

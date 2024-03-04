@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
+
+from flux.models.flows import BaseFlow
+from flux.models.integrators import BaseIntegrator
+from flux.models.integrators.integrators import DefaultIntegrator
 
 
 class Stats:
@@ -48,7 +53,7 @@ class Stats:
         return np.array(integrals_), np.array(uncertainties_)
 
 
-    def plot_convergence(self) -> (np.ndarray[float], np.ndarray[float], np.ndarray[float]):
+    def plot_convergence(self, plot: bool=True) -> (np.ndarray[float], np.ndarray[float], np.ndarray[float]):
         integrals_, uncertainties_ = self.get_convergence_arrays()
 
         plot_integrals, plot_uncertainties = [], []
@@ -60,13 +65,15 @@ class Stats:
 
         x_ = self.n_points * (np.arange(len(plot_integrals)) + 1)
         divergence = np.abs(np.array(plot_integrals) - self.target)
-        plt.plot(x_, divergence)
-        plt.grid()
-        plt.show()
 
-        plt.plot(x_, plot_uncertainties)
-        plt.grid()
-        plt.show()
+        if plot:
+            plt.plot(x_, divergence)
+            plt.grid()
+            plt.show()
+
+            plt.plot(x_, plot_uncertainties)
+            plt.grid()
+            plt.show()
 
         return divergence, plot_uncertainties, x_
 
@@ -81,3 +88,46 @@ class Stats:
     def show_rows(df, nrows=10000):
         with pd.option_context("display.max_rows", nrows):
             print(df)
+
+    @classmethod
+    def plot_learned_distribution(
+        cls,
+        integrator: DefaultIntegrator,
+        n_points: int = 100000,
+        bins: int = 50,
+    ):
+        assert integrator.trainer.prior.dim == 2
+
+        sample = integrator.trainer.sample(n_points)
+
+        x_dim = np.linspace(0, 1 - 1.0 / bins, bins) + 1.0 / bins
+        y_dim = np.linspace(0, 1 - 1.0 / bins, bins) + 1.0 / bins
+
+        X, Y = np.meshgrid(x_dim, y_dim)
+
+        X = torch.tensor(X, dtype=torch.float32)
+        Y = torch.tensor(Y, dtype=torch.float32)
+
+        tensor = torch.stack([X, Y], dim=1)
+        res = integrator.integrand.callable(tensor) / integrator.integrand.target
+        res /= bins*bins
+
+        # fig, axs = plt.subplots(1, 2, figsize=(12.5, 5), gridspec_kw={'width_ratios': [1, 1.25,]})
+        fig, axs = plt.subplots(2, 1, figsize=(5,9))
+
+        hist, _, _ = np.histogram2d(sample[:, 0], sample[:, 1], bins=bins, range=[[0, 1], [0, 1]], density=True)
+        hist /= bins*bins
+
+        cmax = max(hist.max(), res.max())
+        cmin = min(hist.min(), res.min())
+        clim = (cmin, cmax)
+
+        axs[0].imshow(hist, extent=[0, 1, 0, 1], origin='lower', clim=clim, cmap='viridis')
+        axs[0].set_title('Learned distribution')
+
+        axs[1].imshow(res, extent=[0, 1, 0, 1], origin='lower', clim=clim, cmap='viridis')
+        axs[1].set_title('Target distribution')
+
+        fig.colorbar(axs[1].imshow(res, extent=[0, 1, 0, 1], origin='lower', cmap='viridis'), ax=axs)
+
+        plt.show()
